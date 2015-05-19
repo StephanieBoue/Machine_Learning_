@@ -75,7 +75,7 @@ fit_rf<-train(classe ~., method="rf",data=train,verbose=FALSE,trControl=CV)
 pred_rf<-predict(fit_rf,test)
 confusionMatrix(pred_rf,test$classe)
 ```
-
+The out of sample error ranges between XX for lda and XX for random forest.
 Now that the models have been trainined and seem to perform really well on the cross validation, 
 it is time to apply to the prediction of the 20 samples.
 
