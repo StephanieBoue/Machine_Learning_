@@ -1,0 +1,96 @@
+---
+title: "Machine_Learning_Coursera_Project"
+author: "Stephanie Boue"
+date: "Monday, May 11, 2015"
+output: html_document
+---
+
+This is the Writeup for the Course Project of the "Practical Machine Learning" course on Coursera.
+
+Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions (the correct way, class A, and in ways corresponding to common mistakes (classes B-E)): 
+- exactly according to the specification (Class A)
+- throwing the elbows to the front (Class B)
+- lifting the dumbbell only halfway (Class C)
+- lowering the dumbbell only halfway (Class D)
+- throwing the hips to the front (Class E).
+
+In this project, my goal was to use data from accelerometers on the belt, forearm, arm, and dumbell of these participants to predict "which" activity was performed at a specific point in time.
+
+Data source: http://groupware.les.inf.puc-rio.br/har, section on the Weight Lifting Exercise Dataset.
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013
+
+
+```{r load_data,echo=TRUE}
+setwd("~/Coursera_Data_science/Course8_Machine_Learning")
+training<-read.csv("pml-training.csv",header=TRUE,na.string = c("", "NA"))
+
+#str(training)
+```
+
+The dataset contains 160 variables, but a lot of columns have many empty fields. Preprocessing the dataset can consist in only keeping the complete cases.
+
+```{r preprocess,echo=TRUE}
+library(ggplot2)
+library(caret)
+set.seed(4528)
+
+#keep only the variables that have no NAs
+training<-training[,complete.cases(t(training))==TRUE]
+
+## Remove variables that have newar zero variance
+nsv<-nearZeroVar(training,saveMetrics=TRUE)
+training<-training[,c(nsv$nzv==FALSE)]
+
+# Remove the first columns which dont contain measurements but only metadata
+training<-training[,7:59]
+
+# Split the data into training and testing
+inTrain<-createDataPartition(y=training$classe,p=0.75,list=FALSE)
+train<-training[inTrain,]
+test<-training[-inTrain,]
+dim(train)
+dim(test)
+
+### set trainControl parameter for cross validation
+CV<-trainControl(method="cv",number=10)
+
+```
+
+```{r fit1,echo=TRUE,cache=TRUE}
+
+fit_rpart<-train(classe ~., method="rpart",data=train,trControl=CV)
+pred_rpart<-predict(fit_rpart,test)
+confusionMatrix(pred_rpart,test$classe)
+fancyRpartPlot(fit_rpart)
+
+fit_lda<-train(classe ~., method="lda",data=train,trControl=CV)
+pred_lda<-predict(fit_lda,test)
+confusionMatrix(pred_lda,test$classe)
+
+fit_gbm<-train(classe ~., method="gbm",data=train,verbose=FALSE,trControl=CV)
+pred_gbm<-predict(fit_gbm,test)
+confusionMatrix(pred_gbm,test$classe)
+
+fit_rf<-train(classe ~., method="rf",data=train,verbose=FALSE,trControl=CV)
+pred_rf<-predict(fit_rf,test)
+confusionMatrix(pred_rf,test$classe)
+```
+
+Now that the models have been trainined and seem to perform really well on the cross validation, 
+it is time to apply to the prediction of the 20 samples.
+
+```{r predict_test,echo=TRUE,cache=TRUE}
+testing<-read.csv("pml-testing.csv",header=TRUE,na.string = c("", "NA"))
+testing<-testing[,colnames(testing) %in% colnames(training)]
+test_pred_rpart<-predict(fit_rpart,testing,type="prob")
+test_pred_lda<-predict(fit_lda,testing,type="prob")
+test_pred_gbm<-predict(fit_gbm,testing,type="prob")
+test_pred_rf<-predict(fit_rf, testing,type="prob")
+test_pred_comb<-predict(combModFit, testing,type="prob")
+
+preds<-test_pred_rpart*test_pred_lda*test_pred_gbm*test_pred_rf)
+preds
+```
+
+
+
