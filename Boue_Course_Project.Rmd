@@ -61,23 +61,29 @@ CV<-trainControl(method="cv",number=10)
 fit_rpart<-train(classe ~., method="rpart",data=train,trControl=CV)
 pred_rpart<-predict(fit_rpart,test)
 confusionMatrix(pred_rpart,test$classe)
+accuracy_rpart<-confusionMatrix(pred_rpart,test$classe)$overall[1]
+
 fancyRpartPlot(fit_rpart)
 
 fit_lda<-train(classe ~., method="lda",data=train,trControl=CV)
 pred_lda<-predict(fit_lda,test)
 confusionMatrix(pred_lda,test$classe)
+accuracy_lda<-confusionMatrix(pred_lda,test$classe)$overall[1]
 
 fit_gbm<-train(classe ~., method="gbm",data=train,verbose=FALSE,trControl=CV)
 pred_gbm<-predict(fit_gbm,test)
 confusionMatrix(pred_gbm,test$classe)
+accuracy_gbm<-confusionMatrix(pred_gbm,test$classe)$overall[1]
 
 fit_rf<-train(classe ~., method="rf",data=train,verbose=FALSE,trControl=CV)
 pred_rf<-predict(fit_rf,test)
 confusionMatrix(pred_rf,test$classe)
+accuracy_rf<-confusionMatrix(pred_rf,test$classe)$overall[1]
+
 ```
-The out of sample error ranges between XX for lda and XX for random forest.
+The out of sample error ranges between XX for lda and XX for random forrest.
 Now that the models have been trainined and seem to perform really well on the cross validation, 
-it is time to apply to the prediction of the 20 samples.
+it is time to apply to the prediction of the 20 samples. 
 
 ```{r predict_test,echo=TRUE,cache=TRUE}
 testing<-read.csv("pml-testing.csv",header=TRUE,na.string = c("", "NA"))
@@ -86,9 +92,9 @@ test_pred_rpart<-predict(fit_rpart,testing,type="prob")
 test_pred_lda<-predict(fit_lda,testing,type="prob")
 test_pred_gbm<-predict(fit_gbm,testing,type="prob")
 test_pred_rf<-predict(fit_rf, testing,type="prob")
-test_pred_comb<-predict(combModFit, testing,type="prob")
 
-preds<-test_pred_rpart*test_pred_lda*test_pred_gbm*test_pred_rf)
+# We can have the final prediction weighted by the accuracy in the cross validation.
+preds<-round(test_pred_rpart*accuracy_rpart+test_pred_lda*accuracy_lda+test_pred_gbm*accuracy_gbm+test_pred_rf*accuracy_rf,2)
 preds
 ```
 
