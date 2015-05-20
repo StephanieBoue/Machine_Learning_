@@ -21,7 +21,7 @@ Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activ
 
 
 ```{r load_data,echo=TRUE}
-setwd("~/Coursera_Data_science/Course8_Machine_Learning")
+#setwd("~/Coursera_Data_science/Course8_Machine_Learning")
 training<-read.csv("pml-training.csv",header=TRUE,na.string = c("", "NA"))
 
 #str(training)
@@ -32,6 +32,7 @@ The dataset contains 160 variables, but a lot of columns have many empty fields.
 ```{r preprocess,echo=TRUE}
 library(ggplot2)
 library(caret)
+library(rattle)
 set.seed(4528)
 
 #keep only the variables that have no NAs
@@ -81,7 +82,7 @@ confusionMatrix(pred_rf,test$classe)
 accuracy_rf<-confusionMatrix(pred_rf,test$classe)$overall[1]
 
 ```
-The out of sample error ranges between XX for lda and XX for random forrest.
+The out of sample error ranges between 'r (1-accuracy_rpart)*100'% for rpart to 'r (1-accuracy_rf)*100'% for random forest.
 Now that the models have been trainined and seem to perform really well on the cross validation, 
 it is time to apply to the prediction of the 20 samples. 
 
@@ -94,7 +95,8 @@ test_pred_gbm<-predict(fit_gbm,testing,type="prob")
 test_pred_rf<-predict(fit_rf, testing,type="prob")
 
 # We can have the final prediction weighted by the accuracy in the cross validation.
-preds<-round(test_pred_rpart*accuracy_rpart+test_pred_lda*accuracy_lda+test_pred_gbm*accuracy_gbm+test_pred_rf*accuracy_rf,2)
+preds<-round(test_pred_rpart*accuracy_rpart+test_pred_lda*accuracy_lda+test_pred_gbm*accuracy_gbm
+		+test_pred_rf*accuracy_rf,2)
 preds
 ```
 
